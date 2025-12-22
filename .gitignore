@@ -1,0 +1,17 @@
+# Dependencias (sin barra al inicio para que sea recursivo)
+node_modules/
+.next/
+build/
+.env
+
+# Next.js build output
+.next/
+out/
+
+# Producción
+build/
+
+# Variables de entorno y logs
+.env*.local
+*.log
+.DS_Store

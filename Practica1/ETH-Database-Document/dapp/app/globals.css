@@ -1,0 +1,17 @@
+/* Archivo: dapp/app/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Estilos base opcionales */
+body {
+  background-color: #f8f9fa; /* Gris muy claro típico de Bootstrap */
+  min-height: 100vh;
+}
+
+/* Ajuste para que el contenedor principal tenga sombra suave */
+.main-card {
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  border: none;
+  border-radius: 0.5rem;
+}
