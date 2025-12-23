@@ -31,6 +31,7 @@ contract DocumentRegistryTest is Test {
 
         registry.storeDocumentHash(hash, block.timestamp, signature, user1);
 
+        // Esperamos que falle al intentar guardar lo mismo
         vm.expectRevert("Error: Document already exists");
         registry.storeDocumentHash(hash, block.timestamp, signature, user1);
     }
@@ -67,7 +68,8 @@ contract DocumentRegistryTest is Test {
         assertEq(doc.timestamp, ts);
     }
 
-    function testFailGetNonExistentInfo() public {
+    // CORRECCIÓN: Renombrado de 'testFail...' a 'test...Reverts'
+    function testGetNonExistentInfoReverts() public {
         vm.expectRevert("Error: Document does not exist");
         registry.getDocumentInfo(keccak256("nothing"));
     }
