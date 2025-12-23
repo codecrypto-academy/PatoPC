@@ -48,7 +48,7 @@ cd ETH-Database-Document
 2. Configurar Smart Contracts (sc/)
 
 cd sc
-forge init --force  # Inicializa proyecto Foundry
+forge init --force  # Inicializa proyecto Foundry (comando a ejecutar forge script script/Deploy.s.sol)
 forge build         # Compila el contrato
 forge test          # Ejecuta los tests para verificar que todo está verde
 
@@ -79,7 +79,7 @@ Desde la carpeta sc/, despliega el contrato a tu red local recién iniciada.
 Ejecuta el comando de despliegue:
 
 cd sc
-forge script script/Deploy.s.sol --rpc-url http://localhost:8545 --broadcast --private-key 0xac0974bec39a17e36ba4a6b4d238ff944baxxxxxxx
+forge script script/Deploy.s.sol --rpc-url http://localhost:8545 --broadcast --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 
 
 👀 Puntos Críticos del Despliegue:
@@ -160,3 +160,6 @@ Historial vacío o error de validación: Seguramente reiniciaste Anvil. Debes vo
 Error "Nonce too low": Reinicia Anvil (Ctrl+C y anvil de nuevo) y despliega otra vez.
 
 Error de conexión: Asegúrate de que Anvil esté corriendo en el puerto 8545 y que tu .env.local tenga la URL correcta.
+
+VIDEO EXPLICATIVO:
+https://www.loom.com/share/772204e644384696a54ac45919ac457f

@@ -22,13 +22,27 @@ export default function DocumentHistory() {
   const [documents, setDocuments] = useState<DocInfo[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const fetchHistory = async () => {
+  // En dapp/components/DocumentHistory.tsx
+
+const fetchHistory = async () => {
     setLoading(true);
     try {
       const contract = await getContract(false);
       if (!contract) return;
 
+      // --- DIAGNÓSTICO DE SEGURIDAD ---
+      // Verificamos si hay código en la dirección del contrato
+      const code = await contract.runner?.provider?.getCode(await contract.getAddress());
+      if (code === "0x") {
+        alert("⚠️ ALERTA CRÍTICA: Estás conectado a una dirección vacía. \n\n1. Revisa que Anvil esté corriendo.\n2. Redespliega el contrato.\n3. Actualiza el .env.local con la nueva dirección.");
+        setLoading(false);
+        return;
+      }
+      // --------------------------------
+
       const count = await contract.getDocumentCount();
+      console.log("Total documentos encontrados:", count.toString()); // Log para depurar
+      
       const docs: DocInfo[] = [];
 
       for (let i = Number(count) - 1; i >= 0; i--) {
@@ -48,7 +62,6 @@ export default function DocumentHistory() {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchHistory();
   }, []);
