@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+.nyc_output/
+
+# Next.js
+.next/
+out/
+build/
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.production.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Foundry
+out/
+cache/
+broadcast/
+
+# Build artifacts
+dist/
+*.o
+*.a
+*.so
+.dylib
+*.deb
+*.rpm
+
+# Logs
+logs/
+*.log
+daemon.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime
+.env.test
+*.pid
+*.pid.lock
+
+# OS
+Thumbs.db
+.DS_Store

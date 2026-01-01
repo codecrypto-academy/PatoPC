@@ -7,3 +7,6 @@
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
 	branch = v5.1.0
 
+[submodule "Practica2/DAO_Uttility_Token/sc/lib/openzeppelin-contracts"]
+	path = Practica2/DAO_Uttility_Token/sc/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
