@@ -1,10 +1,7 @@
 import { ethers } from "ethers";
-import {
-  ForwardRequest,
-  VoteType,
-  DOMAIN_SEPARATOR,
-  FORWARD_REQUEST_TYPE,
-} from "@/types";
+import { ForwardRequest, VoteType } from "@/types";
+// IMPORTANTE: Importamos las constantes desde contracts.ts para asegurar que usamos la versión corregida
+import { DOMAIN_SEPARATOR, FORWARD_REQUEST_TYPE } from "@/services/contracts";
 
 /**
  * Generate EIP-712 signature for a vote
@@ -20,7 +17,10 @@ export async function signVoteMetaTransaction(
   const daoInterface = new ethers.Interface(["function vote(uint256 proposalId, uint8 voteType)"]);
   const data = daoInterface.encodeFunctionData("vote", [proposalId, voteType]);
 
-  const chainId = await signer.provider?.getNetwork().then((n) => n.chainId);
+  // Asegurar que obtenemos el ChainID como número
+  const network = await signer.provider?.getNetwork();
+  const chainId = network ? Number(network.chainId) : 31337;
+  
   if (!chainId) throw new Error("Could not get chain ID");
 
   const forwardRequest: ForwardRequest = {
@@ -32,6 +32,7 @@ export async function signVoteMetaTransaction(
     data,
   };
 
+  // Construir el dominio EIP-712 exactamente como lo espera el contrato
   const domain = {
     name: DOMAIN_SEPARATOR.name,
     version: DOMAIN_SEPARATOR.version,

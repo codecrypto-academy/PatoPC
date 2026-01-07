@@ -102,6 +102,8 @@ forge script script/Deploy.s.sol --rpc-url http://127.0.0.1:8545 --broadcast
 ```bash
 export PRIVATE_KEY=your_private_key
 forge script script/Deploy.s.sol --rpc-url your_rpc_url --broadcast
+forge script script/Deploy.s.sol --rpc-url 127.0.0.1:8545 --broadcast
+
 ```
 
 ## Contract Addresses
@@ -116,21 +118,26 @@ RELAYER_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4
 EOF
 
 En otro terminal:
-# REEMPLAZA CON LA NUEVA DIRECCIÓN QUE TE DIO EL DESPLIEGUE
-export DAO_ADDRESS=0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
+# Archivo: web/.env (Genera un nuevo archivo .env para el daemon) con esta información
+# Inicio Archivo .env
+DAO_ADDRESS=0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
+RPC_URL=http://127.0.0.1:8545
+RELAYER_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+# Para Next.js (Frontend) - Opcional si ya están en .env.local
+NEXT_PUBLIC_DAO_ADDRESS=0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
+NEXT_PUBLIC_RPC_URL=http://127.0.0.1:8545
+NEXT_PUBLIC_CHAIN_ID=31337
+# Fin del Archivo .env
 
-# Asegúrate que las otras sigan bien
-export RELAYER_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-export RPC_URL=http://127.0.0.1:8545
-## Architecture
 
-Verifica si el contrato testa desplegado:
-cast code 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
-Si el resultado es 0x ejecuta nuevamente
-# Exporta la clave (por seguridad, hazlo de nuevo)
 export PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+
 # Despliega
 forge script script/Deploy.s.sol --rpc-url http://127.0.0.1:8545 --broadcast
+
+Configurar la red personalizada en Metamask con la IP obtenida (http://127.0.0.1:8545)
+Chain ID: 31337
+Agregar Billetera --> Importar cuenta --> ingresar clave privada
 
 ### EIP-2771 Meta-Transaction Flow
 

@@ -10,6 +10,11 @@ import React, {
 import { ethers } from "ethers";
 import { WalletState } from "@/types";
 
+// CONSTANTES DE TU RED LOCAL
+const LOCAL_CHAIN_ID = 31337;
+const LOCAL_CHAIN_HEX = "0x7a69"; // 31337 en Hexadecimal
+const RPC_URL = process.env.NEXT_PUBLIC_RPC_URL || "http://127.0.0.1:8545";
+
 interface Web3ContextType {
   wallet: WalletState;
   accounts: string[];
@@ -35,20 +40,62 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
   const [signer, setSigner] = useState<ethers.Signer | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Función para forzar el cambio de red
+  const ensureLocalNetwork = async () => {
+    if (!window.ethereum) return;
+    
+    try {
+      // Intentar cambiar a la red local
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: LOCAL_CHAIN_HEX }],
+      });
+    } catch (switchError: any) {
+      // El código 4902 significa que la red no existe en MetaMask y hay que agregarla
+      if (switchError.code === 4902) {
+        try {
+          await window.ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: [
+              {
+                chainId: LOCAL_CHAIN_HEX,
+                chainName: "Anvil Localhost",
+                rpcUrls: [RPC_URL],
+                nativeCurrency: {
+                  name: "ETH",
+                  symbol: "ETH",
+                  decimals: 18,
+                },
+              },
+            ],
+          });
+        } catch (addError) {
+          console.error("No se pudo agregar la red local:", addError);
+        }
+      } else {
+        console.error("No se pudo cambiar de red:", switchError);
+      }
+    }
+  };
+
   const updateWalletState = useCallback(
     async (addr: string, prov: ethers.Provider) => {
       try {
-        const balance = await prov.getBalance(addr);
         const network = await prov.getNetwork();
-        const newSigner = await (prov as ethers.BrowserProvider).getSigner(
-          addr
-        );
+        const chainId = Number(network.chainId);
+
+        console.log("DEBUG: Chain ID detectado:", chainId);
+
+        // Si no estamos en la red local, recargar o avisar (pero intentaremos forzarlo antes)
+        
+        const balance = await prov.getBalance(addr);
+        const newSigner = await (prov as ethers.BrowserProvider).getSigner(addr);
 
         setWallet({
           address: addr,
           isConnected: true,
           balance: ethers.formatEther(balance),
-          chainId: Number(network.chainId),
+          chainId: chainId,
         });
         setSigner(newSigner);
       } catch (error) {
@@ -65,11 +112,15 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
         throw new Error("MetaMask not detected");
       }
 
+      // 1. PRIMERO: Forzamos la conexión a la red correcta
+      await ensureLocalNetwork();
+
       const requestedAccounts = await window.ethereum.request({
         method: "eth_requestAccounts",
       });
       setAccounts(requestedAccounts);
 
+      // Reinicializamos el provider después de asegurar la red
       const prov = new ethers.BrowserProvider(window.ethereum);
       setProvider(prov);
 
@@ -107,49 +158,58 @@ export function Web3Provider({ children }: { children: React.ReactNode }) {
     [provider, updateWalletState]
   );
 
+  // Detectar cambios de red y recargar
   useEffect(() => {
     if (window.ethereum) {
-      const handleAccountsChanged = async (newAccounts: string[]) => {
-        if (newAccounts.length === 0) {
-          disconnect();
-        } else if (provider) {
-          setAccounts(newAccounts);
-          // Check if the currently connected account is still in the list
-          const currentAddress = wallet.address;
-          if (!newAccounts.includes(currentAddress!)) {
-            // If not, switch to the first available account
-            await updateWalletState(newAccounts[0], provider);
-          }
-        }
-      };
-
       const handleChainChanged = () => {
+        // Recargar la página es la práctica recomendada por MetaMask al cambiar de red
         window.location.reload();
       };
 
-      window.ethereum.on("accountsChanged", handleAccountsChanged);
+      const handleAccountsChanged = async (newAccounts: string[]) => {
+          if (newAccounts.length === 0) {
+            disconnect();
+          } else if (provider) {
+            setAccounts(newAccounts);
+            // Check if the currently connected account is still in the list
+            const currentAddress = wallet.address;
+            if (!newAccounts.includes(currentAddress!)) {
+              // If not, switch to the first available account
+              await updateWalletState(newAccounts[0], provider);
+            }
+          }
+        };
+
       window.ethereum.on("chainChanged", handleChainChanged);
+      window.ethereum.on("accountsChanged", handleAccountsChanged);
 
       return () => {
-        window.ethereum?.removeListener(
-          "accountsChanged",
-          handleAccountsChanged
-        );
         window.ethereum?.removeListener("chainChanged", handleChainChanged);
+        window.ethereum?.removeListener("accountsChanged", handleAccountsChanged);
       };
     }
-  }, [provider, disconnect, updateWalletState, wallet.address]);
+  }, [provider, disconnect, updateWalletState, wallet.address]); // Agregué dependencias
 
+  // Check inicial
   useEffect(() => {
     const checkConnection = async () => {
       try {
         if (!window.ethereum) return;
 
+        // Verificar si ya estamos conectados
         const availableAccounts = await window.ethereum.request({
-          method: "eth_accounts",
+            method: "eth_accounts",
         });
 
         if (availableAccounts.length > 0) {
+           // Si estamos conectados, validar red
+           const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+           
+           if (chainId !== LOCAL_CHAIN_HEX) {
+               console.log("Red incorrecta detectada al inicio. Cambiando...");
+               await ensureLocalNetwork();
+           }
+
           setAccounts(availableAccounts);
           const prov = new ethers.BrowserProvider(window.ethereum);
           setProvider(prov);

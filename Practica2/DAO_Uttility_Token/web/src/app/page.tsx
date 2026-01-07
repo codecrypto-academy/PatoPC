@@ -100,7 +100,8 @@ NEXT_PUBLIC_RPC_URL=http://127.0.0.1:8545`}
               <div className="app-card">
                 <FundingPanel
                   daoAddress={DAO_ADDRESS}
-                  userDAOBalance={userDAOBalance}
+                  userDAOBalance={userDAOBalance} // Saldo dentro del DAO
+                  walletBalance={wallet.balance}  // <--- NUEVO: Saldo de MetaMask disponible para usar   // ...
                   totalDAOBalance={totalDAOBalance}
                   onSuccess={handleSuccess}
                 />

@@ -16,6 +16,8 @@ interface ProposalCardProps {
   onVoteSuccess?: () => void;
 }
 
+type PaymentMethod = "gasless" | "standard";
+
 export function ProposalCard({
   proposal,
   daoAddress,
@@ -29,6 +31,9 @@ export function ProposalCard({
   const [votingType, setVotingType] = useState<VoteType | null>(null);
   const [voteMessage, setVoteMessage] = useState("");
   const [state, setState] = useState<ProposalState>(ProposalState.ACTIVE);
+  
+  // Nuevo estado para el método de pago
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("gasless");
 
   useEffect(() => {
     const fetchState = async () => {
@@ -39,7 +44,11 @@ export function ProposalCard({
         );
         const contract = new ethers.Contract(daoAddress, DAO_ABI, provider);
         const stateValue = await contract.getProposalState(proposal.id);
-        setState(stateValue);
+        
+        // CORRECCIÓN CRÍTICA: Convertir BigInt a Number
+        // Ethers v6 devuelve BigInt (0n), pero ProposalState es Number (0).
+        // Sin esto, (0n === 0) es false y los botones desaparecen.
+        setState(Number(stateValue));
       } catch (error) {
         console.error("Error fetching proposal state:", error);
       }
@@ -50,6 +59,7 @@ export function ProposalCard({
     return () => clearInterval(interval);
   }, [proposal.id, daoAddress, wallet.isConnected]);
 
+  // 1. Votación Gasless (Paga el Relayer)
   const handleGaslessVote = async (voteType: VoteType) => {
     if (!signer || !wallet.isConnected) {
       setVoteMessage("Please connect wallet first");
@@ -58,9 +68,9 @@ export function ProposalCard({
 
     setIsVoting(true);
     setVotingType(voteType);
+    setVoteMessage("Signing message (no gas cost)...");
 
     try {
-      // Get current nonce
       const provider = new ethers.JsonRpcProvider(
         process.env.NEXT_PUBLIC_RPC_URL
       );
@@ -69,20 +79,24 @@ export function ProposalCard({
         ["function getNonce(address) view returns (uint256)"],
         provider
       );
-      const nonce = await forwarderContract.getNonce(await signer.getAddress());
+      
+      // SOLUCIÓN AL ERROR JSON:
+      // El contrato devuelve BigInt, pero JSON.stringify falla con BigInt.
+      // Convertimos a Number antes de enviar.
+      const nonceBigInt = await forwarderContract.getNonce(await signer.getAddress());
+      const nonce = Number(nonceBigInt);
 
-      // Cast gasless vote
       const result = await castGaslessVote(
         signer,
         forwarderAddress,
         daoAddress,
-        proposal.id,
+        Number(proposal.id), // Aseguramos que el ID también sea number
         voteType,
         nonce
       );
 
       if (result.success) {
-        setVoteMessage("✓ Vote submitted successfully!");
+        setVoteMessage("✓ Vote submitted via Relayer!");
         setTimeout(() => {
           setVoteMessage("");
           onVoteSuccess?.();
@@ -100,15 +114,62 @@ export function ProposalCard({
     }
   };
 
+  // 2. Votación Estándar (Paga el usuario)
+  const handleStandardVote = async (voteType: VoteType) => {
+    if (!signer || !wallet.isConnected) {
+      setVoteMessage("Please connect wallet first");
+      return;
+    }
+
+    setIsVoting(true);
+    setVotingType(voteType);
+    setVoteMessage("Please confirm transaction in wallet...");
+
+    try {
+      const contract = new ethers.Contract(daoAddress, DAO_ABI, signer);
+      
+      // Llamada directa al contrato
+      const tx = await contract.vote(proposal.id, voteType);
+      
+      setVoteMessage("Transaction submitted. Waiting for confirmation...");
+      await tx.wait();
+
+      setVoteMessage("✓ Vote confirmed on-chain!");
+      setTimeout(() => {
+        setVoteMessage("");
+        onVoteSuccess?.();
+      }, 2000);
+    } catch (error) {
+        console.error(error);
+      setVoteMessage(
+        `Error: ${error instanceof Error ? error.message : "Transaction failed"}`
+      );
+    } finally {
+      setIsVoting(false);
+      setVotingType(null);
+    }
+  };
+
+  // 3. Router de votación
+  const handleVote = (voteType: VoteType) => {
+    if (paymentMethod === "gasless") {
+      handleGaslessVote(voteType);
+    } else {
+      handleStandardVote(voteType);
+    }
+  };
+
   const isActive = state === ProposalState.ACTIVE;
-  const deadline = new Date(proposal.deadline * 1000);
+  // Corrección BigInt para la fecha
+  const deadline = new Date(Number(proposal.deadline) * 1000);
   const isOverdue = Date.now() > deadline.getTime();
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6 border-l-4 border-blue-500">
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="text-xl font-bold">Proposal #{proposal.id}</h3>
+          {/* Corrección BigInt para ID */}
+          <h3 className="text-xl font-bold">Proposal #{proposal.id.toString()}</h3>
           <p className="text-gray-600 font-mono text-sm">
             To: {proposal.recipient.slice(0, 6)}...{proposal.recipient.slice(-4)}
           </p>
@@ -141,17 +202,18 @@ export function ProposalCard({
       </div>
 
       <div className="grid grid-cols-3 gap-3 mb-4 bg-gray-50 p-4 rounded">
+        {/* Corrección BigInt para Votos */}
         <div className="text-center">
           <p className="text-gray-600 text-xs">FOR</p>
-          <p className="text-lg font-bold text-green-600">{proposal.votesFor}</p>
+          <p className="text-lg font-bold text-green-600">{proposal.votesFor.toString()}</p>
         </div>
         <div className="text-center">
           <p className="text-gray-600 text-xs">AGAINST</p>
-          <p className="text-lg font-bold text-red-600">{proposal.votesAgainst}</p>
+          <p className="text-lg font-bold text-red-600">{proposal.votesAgainst.toString()}</p>
         </div>
         <div className="text-center">
           <p className="text-gray-600 text-xs">ABSTAIN</p>
-          <p className="text-lg font-bold text-gray-600">{proposal.votesAbstain}</p>
+          <p className="text-lg font-bold text-gray-600">{proposal.votesAbstain.toString()}</p>
         </div>
       </div>
 
@@ -161,35 +223,80 @@ export function ProposalCard({
         </div>
       )}
 
+      {/* SECCIÓN DE VOTACIÓN */}
       {isActive && !userVoted && wallet.isConnected && (
-        <div className="flex gap-2 mb-4">
-          <button
-            onClick={() => handleGaslessVote(VoteType.FOR)}
-            disabled={isVoting}
-            className="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition text-sm"
-          >
-            {isVoting && votingType === VoteType.FOR ? "Voting..." : "Vote For"}
-          </button>
-          <button
-            onClick={() => handleGaslessVote(VoteType.AGAINST)}
-            disabled={isVoting}
-            className="flex-1 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 transition text-sm"
-          >
-            {isVoting && votingType === VoteType.AGAINST ? "Voting..." : "Vote Against"}
-          </button>
-          <button
-            onClick={() => handleGaslessVote(VoteType.ABSTAIN)}
-            disabled={isVoting}
-            className="flex-1 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:bg-gray-400 transition text-sm"
-          >
-            {isVoting && votingType === VoteType.ABSTAIN ? "Voting..." : "Abstain"}
-          </button>
+        <div className="border-t pt-4 mt-4">
+          
+          {/* Selector de Método de Pago */}
+          <div className="mb-4">
+            <p className="text-sm font-medium text-gray-700 mb-2">Who pays for gas?</p>
+            <div className="flex gap-4">
+              <label 
+                className={`flex-1 flex items-center justify-center gap-2 p-2 rounded border cursor-pointer transition ${
+                  paymentMethod === 'gasless' 
+                    ? 'bg-indigo-50 border-indigo-500 text-indigo-700' 
+                    : 'bg-white border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                <input 
+                  type="radio" 
+                  name={`payment-${proposal.id}`}
+                  checked={paymentMethod === 'gasless'}
+                  onChange={() => setPaymentMethod('gasless')}
+                  className="hidden"
+                />
+                <span>⚡ Relayer (Gasless)</span>
+              </label>
+
+              <label 
+                className={`flex-1 flex items-center justify-center gap-2 p-2 rounded border cursor-pointer transition ${
+                  paymentMethod === 'standard' 
+                    ? 'bg-indigo-50 border-indigo-500 text-indigo-700' 
+                    : 'bg-white border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                <input 
+                  type="radio" 
+                  name={`payment-${proposal.id}`}
+                  checked={paymentMethod === 'standard'}
+                  onChange={() => setPaymentMethod('standard')}
+                  className="hidden"
+                />
+                <span>⛽ Me (Standard)</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Botones de Voto */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleVote(VoteType.FOR)}
+              disabled={isVoting}
+              className="flex-1 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition text-sm font-medium"
+            >
+              {isVoting && votingType === VoteType.FOR ? "Voting..." : "Vote For"}
+            </button>
+            <button
+              onClick={() => handleVote(VoteType.AGAINST)}
+              disabled={isVoting}
+              className="flex-1 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 transition text-sm font-medium"
+            >
+              {isVoting && votingType === VoteType.AGAINST ? "Voting..." : "Vote Against"}
+            </button>
+            <button
+              onClick={() => handleVote(VoteType.ABSTAIN)}
+              disabled={isVoting}
+              className="flex-1 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:bg-gray-400 transition text-sm font-medium"
+            >
+              {isVoting && votingType === VoteType.ABSTAIN ? "Voting..." : "Abstain"}
+            </button>
+          </div>
         </div>
       )}
 
       {voteMessage && (
         <div
-          className={`p-3 rounded-lg text-sm ${
+          className={`mt-3 p-3 rounded-lg text-sm ${
             voteMessage.includes("Error")
               ? "bg-red-100 text-red-800"
               : "bg-green-100 text-green-800"

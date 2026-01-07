@@ -53,7 +53,7 @@ anvil
 cd sc
 
 # Export the first private key from Anvil
-export PRIVATE_KEY=0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266
+export PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 
 # Deploy contracts
 forge script script/Deploy.s.sol --rpc-url http://127.0.0.1:8545 --broadcast
@@ -111,8 +111,19 @@ cd web
 # First, install ts-node if not already installed
 npm install -g ts-node
 
+# Archivo: web/.env (Genera un nuevo archivo .env para el daemon) con esta información
+# Inicio Archivo .env
+DAO_ADDRESS=0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
+RPC_URL=http://127.0.0.1:8545
+RELAYER_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+# Para Next.js (Frontend) - Opcional si ya están en .env.local
+export NEXT_PUBLIC_DAO_ADDRESS=0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
+export NEXT_PUBLIC_RPC_URL=http://127.0.0.1:8545
+export NEXT_PUBLIC_CHAIN_ID=31337
+# Fin del Archivo .env
+
 # Start daemon
-npx ts-node daemon.ts
+npm run daemon
 
 # You should see:
 # DAO Execution Daemon started

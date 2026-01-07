@@ -9,6 +9,7 @@ interface FundingPanelProps {
   daoAddress: string;
   userDAOBalance: string;
   totalDAOBalance: string;
+  walletBalance: string; // <--- NUEVA LÍNEA: Ahora el componente acepta este dato
   onSuccess?: () => void;
 }
 
@@ -16,6 +17,7 @@ export function FundingPanel({
   daoAddress,
   userDAOBalance,
   totalDAOBalance,
+  walletBalance, // <--- NUEVO: Destructura la variable para usarla
   onSuccess,
 }: FundingPanelProps) {
   const { signer, wallet } = useWeb3();
@@ -54,16 +56,23 @@ export function FundingPanel({
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
-      <h2 className="text-2xl font-bold mb-4">Fund DAO</h2>
-
+      <h2 className="text-xl font-bold mb-4">Fund DAO</h2>
+      
       <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="bg-gray-50 p-4 rounded">
-          <p className="text-gray-600 text-sm">Your Balance</p>
-          <p className="text-xl font-bold">{parseFloat(userDAOBalance).toFixed(4)} ETH</p>
+        {/* 3. USA LA VARIABLE EN LA VISTA */}
+        <div className="bg-gray-800/50 p-3 rounded-lg">
+          <p className="text-sm text-gray-400">Wallet Balance</p>
+          <p className="text-lg font-mono font-bold text-white">
+            {parseFloat(walletBalance).toFixed(4)} ETH {/* <--- Aquí mostramos el saldo real de MetaMask */}
+          </p>
         </div>
-        <div className="bg-gray-50 p-4 rounded">
-          <p className="text-gray-600 text-sm">Total DAO Balance</p>
-          <p className="text-xl font-bold">{parseFloat(totalDAOBalance).toFixed(4)} ETH</p>
+
+        <div className="bg-gray-800/50 p-3 rounded-lg">
+          <p className="text-sm text-gray-400">DAO Balance</p>
+           {/* Este es el saldo que el usuario ya depositó en el contrato (si aplica) */}
+          <p className="text-lg font-mono font-bold text-white">
+            {parseFloat(userDAOBalance).toFixed(4)} ETH
+          </p>
         </div>
       </div>
 

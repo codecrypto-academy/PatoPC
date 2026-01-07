@@ -25,8 +25,8 @@ export const DAO_ABI = [
 // ERC2771Context domain separator (for EIP-712)
 export const DOMAIN_SEPARATOR = {
   name: "MinimalForwarder",
-  version: "1",
-  salt: ethers.id("eip712.example.com"),
+  version: "0.0.1", // CRÍTICO: OpenZeppelin v4 usa 0.0.1
+  // salt: ELIMINADO. OpenZeppelin MinimalForwarder NO usa salt por defecto.
 };
 
 export const FORWARD_REQUEST_TYPE = {
