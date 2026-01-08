@@ -46,8 +46,6 @@ export function ProposalCard({
         const stateValue = await contract.getProposalState(proposal.id);
         
         // CORRECCIÓN CRÍTICA: Convertir BigInt a Number
-        // Ethers v6 devuelve BigInt (0n), pero ProposalState es Number (0).
-        // Sin esto, (0n === 0) es false y los botones desaparecen.
         setState(Number(stateValue));
       } catch (error) {
         console.error("Error fetching proposal state:", error);
@@ -59,12 +57,34 @@ export function ProposalCard({
     return () => clearInterval(interval);
   }, [proposal.id, daoAddress, wallet.isConnected]);
 
+  // Función auxiliar para verificar saldo en DAO antes de votar
+  const checkDaoBalance = async (): Promise<boolean> => {
+    if (!wallet.address) return false;
+    try {
+      const provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL);
+      const contract = new ethers.Contract(daoAddress, DAO_ABI, provider);
+      const balance = await contract.getUserBalance(wallet.address);
+      if (Number(balance) === 0) {
+        setVoteMessage("❌ Error: You must fund the DAO to vote!");
+        return false;
+      }
+      return true;
+    } catch (e) {
+      console.error("Balance check failed", e);
+      return true; // Si falla la verificación, intentamos votar igual
+    }
+  };
+
   // 1. Votación Gasless (Paga el Relayer)
   const handleGaslessVote = async (voteType: VoteType) => {
     if (!signer || !wallet.isConnected) {
       setVoteMessage("Please connect wallet first");
       return;
     }
+
+    // VERIFICACIÓN DE SALDO
+    const hasBalance = await checkDaoBalance();
+    if (!hasBalance) return;
 
     setIsVoting(true);
     setVotingType(voteType);
@@ -97,12 +117,18 @@ export function ProposalCard({
 
       if (result.success) {
         setVoteMessage("✓ Vote submitted via Relayer!");
+        // Llamamos a onSuccess inmediatamente para actualizar la UI y ocultar botones
+        onVoteSuccess?.();
         setTimeout(() => {
           setVoteMessage("");
-          onVoteSuccess?.();
-        }, 2000);
+        }, 3000);
       } else {
-        setVoteMessage(`Error: ${result.error}`);
+        // Manejo de error más amigable
+        if (result.error?.includes("reverted") || result.error?.includes("CALL_EXCEPTION")) {
+             setVoteMessage("Error: Transaction failed. You may have already voted or have no voting power.");
+        } else {
+             setVoteMessage(`Error: ${result.error}`);
+        }
       }
     } catch (error) {
       setVoteMessage(
@@ -121,6 +147,10 @@ export function ProposalCard({
       return;
     }
 
+    // VERIFICACIÓN DE SALDO
+    const hasBalance = await checkDaoBalance();
+    if (!hasBalance) return;
+
     setIsVoting(true);
     setVotingType(voteType);
     setVoteMessage("Please confirm transaction in wallet...");
@@ -135,15 +165,18 @@ export function ProposalCard({
       await tx.wait();
 
       setVoteMessage("✓ Vote confirmed on-chain!");
+      onVoteSuccess?.(); // Actualizar UI inmediatamente
       setTimeout(() => {
         setVoteMessage("");
-        onVoteSuccess?.();
-      }, 2000);
+      }, 3000);
     } catch (error) {
         console.error(error);
-      setVoteMessage(
-        `Error: ${error instanceof Error ? error.message : "Transaction failed"}`
-      );
+        const errMessage = error instanceof Error ? error.message : "Transaction failed";
+        if (errMessage.includes("Already voted")) {
+             setVoteMessage("Error: You have already voted on this proposal.");
+        } else {
+             setVoteMessage(`Error: ${errMessage}`);
+        }
     } finally {
       setIsVoting(false);
       setVotingType(null);

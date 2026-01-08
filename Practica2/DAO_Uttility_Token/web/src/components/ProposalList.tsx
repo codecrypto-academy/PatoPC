@@ -40,24 +40,28 @@ export function ProposalList({
       const votes = new Map<number, { voted: boolean; voteType: VoteType }>();
 
       for (let i = 1; i <= count; i++) {
+        // Obtenemos la propuesta (ahora incluye title y description)
         const proposal = await contract.getProposal(i);
+        
         proposalsList.push({
-          id: proposal.id,
+          id: Number(proposal.id),
+          title: proposal.title,             // <--- Mapear Título
+          description: proposal.description, // <--- Mapear Descripción
           recipient: proposal.recipient,
           amount: proposal.amount.toString(),
-          deadline: proposal.deadline,
-          votesFor: proposal.votesFor,
-          votesAgainst: proposal.votesAgainst,
-          votesAbstain: proposal.votesAbstain,
+          deadline: Number(proposal.deadline),
+          votesFor: Number(proposal.votesFor),
+          votesAgainst: Number(proposal.votesAgainst),
+          votesAbstain: Number(proposal.votesAbstain),
           executed: proposal.executed,
-          executionTime: proposal.executionTime,
+          executionTime: Number(proposal.executionTime),
         });
 
         // Get user's vote
         const userVote = await contract.getUserVote(i, wallet.address);
         votes.set(i, {
           voted: userVote[0],
-          voteType: userVote[1],
+          voteType: Number(userVote[1]),
         });
       }
 

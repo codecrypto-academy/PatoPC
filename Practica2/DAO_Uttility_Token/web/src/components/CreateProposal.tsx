@@ -19,6 +19,8 @@ export function CreateProposal({
   onSuccess,
 }: CreateProposalProps) {
   const { signer, wallet } = useWeb3();
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [recipient, setRecipient] = useState("");
   const [amount, setAmount] = useState("");
   const [days, setDays] = useState("3");
@@ -46,7 +48,10 @@ export function CreateProposal({
       const contract = new ethers.Contract(daoAddress, DAO_ABI, signer);
       const deadline = Math.floor(Date.now() / 1000) + parseInt(days) * 86400;
 
+      // Llamada actualizada con título y descripción
       const tx = await contract.createProposal(
+        title,
+        description,
         recipient,
         ethers.parseEther(amount),
         deadline
@@ -55,9 +60,14 @@ export function CreateProposal({
 
       await tx.wait();
       setMessage("✓ Proposal created successfully!");
+      
+      // Limpiar formulario
+      setTitle("");
+      setDescription("");
       setRecipient("");
       setAmount("");
       setDays("3");
+      
       setTimeout(() => setMessage(""), 3000);
       onSuccess?.();
     } catch (error) {
@@ -84,6 +94,34 @@ export function CreateProposal({
       )}
 
       <form onSubmit={handleCreate} className="space-y-4">
+        
+        {/* Nuevo campo: Título */}
+        <div>
+          <label className="block text-sm font-medium mb-2">Title</label>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Proposal Title"
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={isLoading}
+            required
+          />
+        </div>
+
+        {/* Nuevo campo: Descripción */}
+        <div>
+          <label className="block text-sm font-medium mb-2">Description</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Describe your proposal..."
+            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24"
+            disabled={isLoading}
+            required
+          />
+        </div>
+
         <div>
           <label className="block text-sm font-medium mb-2">
             Recipient Address
@@ -95,39 +133,44 @@ export function CreateProposal({
             placeholder="0x..."
             className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={isLoading}
+            required
           />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-2">Amount (ETH)</label>
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="0.0"
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={isLoading}
-          />
-        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Amount (ETH)</label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0.0"
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={isLoading}
+              required
+            />
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-2">Voting Days</label>
-          <input
-            type="number"
-            min="1"
-            value={days}
-            onChange={(e) => setDays(e.target.value)}
-            className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            disabled={isLoading}
-          />
+          <div>
+            <label className="block text-sm font-medium mb-2">Days</label>
+            <input
+              type="number"
+              min="1"
+              value={days}
+              onChange={(e) => setDays(e.target.value)}
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={isLoading}
+              required
+            />
+          </div>
         </div>
 
         <button
           type="submit"
           disabled={
-            isLoading || !recipient || !amount || !wallet.isConnected || !canCreateProposal
+            isLoading || !title || !recipient || !amount || !wallet.isConnected || !canCreateProposal
           }
           className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition"
         >

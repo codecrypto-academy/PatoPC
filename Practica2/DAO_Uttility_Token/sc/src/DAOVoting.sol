@@ -29,6 +29,8 @@ contract DAOVoting is ERC2771Context, Ownable {
 
     struct Proposal {
         uint256 id;
+        string title;       // <--- NUEVO
+        string description; // <--- NUEVO
         address recipient;
         uint256 amount;
         uint256 deadline;
@@ -61,6 +63,7 @@ contract DAOVoting is ERC2771Context, Ownable {
     event ProposalCreated(
         uint256 indexed proposalId,
         address indexed creator,
+        string title, // <--- NUEVO EN EVENTO
         address recipient,
         uint256 amount,
         uint256 deadline
@@ -131,15 +134,20 @@ contract DAOVoting is ERC2771Context, Ownable {
 
     /**
      * @dev Create a new proposal
+     * @param title Title of the proposal
+     * @param description Description of the proposal
      * @param recipient Address to receive funds
      * @param amount Amount of ETH to transfer
      * @param deadline Timestamp when voting ends
      */
     function createProposal(
+        string memory title,       // <--- NUEVO
+        string memory description, // <--- NUEVO
         address recipient,
         uint256 amount,
         uint256 deadline
     ) external {
+        require(bytes(title).length > 0, "Title required");
         require(recipient != address(0), "Invalid recipient");
         require(amount > 0, "Amount must be > 0");
         require(amount <= totalDAOBalance, "Insufficient DAO balance");
@@ -158,6 +166,8 @@ contract DAOVoting is ERC2771Context, Ownable {
 
         proposals[proposalId] = Proposal({
             id: proposalId,
+            title: title,             // <--- NUEVO
+            description: description, // <--- NUEVO
             recipient: recipient,
             amount: amount,
             deadline: deadline,
@@ -171,6 +181,7 @@ contract DAOVoting is ERC2771Context, Ownable {
         emit ProposalCreated(
             proposalId,
             _msgSender(),
+            title,
             recipient,
             amount,
             deadline
@@ -179,8 +190,6 @@ contract DAOVoting is ERC2771Context, Ownable {
 
     /**
      * @dev Cast a vote on a proposal
-     * @param proposalId ID of the proposal
-     * @param voteType Type of vote (FOR, AGAINST, ABSTAIN)
      */
     function vote(uint256 proposalId, VoteType voteType)
         external
@@ -208,8 +217,6 @@ contract DAOVoting is ERC2771Context, Ownable {
 
     /**
      * @dev Change vote on a proposal before deadline
-     * @param proposalId ID of the proposal
-     * @param voteType New vote type
      */
     function changeVote(uint256 proposalId, VoteType voteType)
         external
@@ -252,7 +259,6 @@ contract DAOVoting is ERC2771Context, Ownable {
 
     /**
      * @dev Execute an approved proposal
-     * @param proposalId ID of the proposal to execute
      */
     function executeProposal(uint256 proposalId)
         external
@@ -273,11 +279,6 @@ contract DAOVoting is ERC2771Context, Ownable {
 
     // ============ View Functions ============
 
-    /**
-     * @dev Get a proposal by ID
-     * @param proposalId ID of the proposal
-     * @return The proposal struct
-     */
     function getProposal(uint256 proposalId)
         external
         view
@@ -287,11 +288,6 @@ contract DAOVoting is ERC2771Context, Ownable {
         return proposals[proposalId];
     }
 
-    /**
-     * @dev Get the state of a proposal
-     * @param proposalId ID of the proposal
-     * @return Current state of the proposal
-     */
     function getProposalState(uint256 proposalId)
         external
         view
@@ -315,30 +311,14 @@ contract DAOVoting is ERC2771Context, Ownable {
         return ProposalState.REJECTED;
     }
 
-    /**
-     * @dev Get user's balance in the DAO
-     * @param user Address of the user
-     * @return User's balance
-     */
     function getUserBalance(address user) external view returns (uint256) {
         return userBalances[user];
     }
 
-    /**
-     * @dev Get total number of proposals
-     * @return Total proposal count
-     */
     function getProposalCount() external view returns (uint256) {
         return _proposalCounter;
     }
 
-    /**
-     * @dev Get user's vote on a proposal
-     * @param proposalId ID of the proposal
-     * @param user Address of the user
-     * @return voted Whether user has voted
-     * @return voteType The type of vote cast
-     */
     function getUserVote(uint256 proposalId, address user)
         external
         view

@@ -7,6 +7,7 @@ import { ConnectWallet } from "@/components/ConnectWallet";
 import { FundingPanel } from "@/components/FundingPanel";
 import { CreateProposal } from "@/components/CreateProposal";
 import { ProposalList } from "@/components/ProposalList";
+import { DebugMetaTx } from "@/components/DebugMetaTx";
 import { DAO_ABI } from "@/services/contracts";
 
 const DAO_ADDRESS = process.env.NEXT_PUBLIC_DAO_ADDRESS || "";
