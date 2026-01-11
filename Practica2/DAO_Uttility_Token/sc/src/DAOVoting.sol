@@ -29,8 +29,8 @@ contract DAOVoting is ERC2771Context, Ownable {
 
     struct Proposal {
         uint256 id;
-        string title;       // <--- NUEVO
-        string description; // <--- NUEVO
+        string title;       
+        string description; 
         address recipient;
         uint256 amount;
         uint256 deadline;

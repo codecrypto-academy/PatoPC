@@ -5,19 +5,21 @@ import * as path from "path";
 
 // Configuration (support NEXT_PUBLIC_* names from .env.local)
 const DAO_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
-const FORWARDER_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+const FORWARDER_ADDRESS = "0x5fbdb2315678afecb367f032d93f642f64180aa3";
 const RELAYER_PRIVATE_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 const RPC_URL = "http://127.0.0.1:8545";
 const CHECK_INTERVAL = parseInt(process.env.CHECK_INTERVAL || "30000"); // 30 seconds
 
 const DAO_ABI = [
   "function getProposalCount() external view returns (uint256)",
-  "function getProposal(uint256 proposalId) external view returns (tuple(uint256 id, address recipient, uint256 amount, uint256 deadline, uint256 votesFor, uint256 votesAgainst, uint256 votesAbstain, bool executed, uint256 executionTime))",
+  "function getProposal(uint256 proposalId) external view returns (tuple(uint256 id, string title, string description, address recipient, uint256 amount, uint256 deadline, uint256 votesFor, uint256 votesAgainst, uint256 votesAbstain, bool executed, uint256 executionTime))",
   "function executeProposal(uint256 proposalId) external",
 ];
 
 interface Proposal {
   id: number;
+  title: string;
+  description: string;
   recipient: string;
   amount: bigint;
   deadline: number;
